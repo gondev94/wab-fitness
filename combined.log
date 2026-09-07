@@ -1,15 +1,2 @@
-{"level":"info","message":"Server is running on port 3000","service":"user-service"}
-{"level":"info","message":"Server is running on port 3000","service":"user-service"}
-{"level":"info","message":"Server is running on port 3000","service":"user-service"}
-{"level":"info","message":"Server is running on port 3000","service":"user-service"}
-{"level":"info","message":"Server is running on port 3000","service":"user-service"}
-{"level":"info","message":"Server is running on port 3000","service":"user-service"}
-{"level":"info","message":"Server is running on port 3000","service":"user-service"}
-{"level":"info","message":"Server is running on port 3000","service":"user-service"}
-{"level":"info","message":"Server is running on port 3000","service":"user-service"}
-{"level":"info","message":"Server is running on port 3000","service":"user-service"}
-{"level":"info","message":"Server is running on port 3000"}
-{"level":"info","message":"Server is running on port 3000","service":"user-service"}
-{"level":"info","message":"Server is running on port 3000"}
-{"filename":"app.ts","level":"info","message":"Server is running on port 3000"}
-{"level":"info","message":"Server is running on port 3000","service":"app.ts"}
+{"level":"info","message":"Server is running on port 3000","service":"app.ts","timestamp":"2026-09-07 18:00:03"}
+{"level":"info","message":"Server is running on port 3000","service":"app.ts","timestamp":"2026-09-07 18:00:33"}
