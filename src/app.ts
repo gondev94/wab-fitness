@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import express from "express";
-import { buildLogger } from "./plugins/logger.plugin.ts";
+import { buildLogger } from "./plugins/logger.plugin.js";
 
 dotenv.config();
 const app = express();
