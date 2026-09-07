@@ -1,4 +1,4 @@
-type Role = 'admin' | 'user' | 'guest';
+export type Role = 'admin' | 'user' | 'guest';
 
 export class UserModel {
     readonly id: string | number;

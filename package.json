@@ -22,6 +22,7 @@
         "typescript": "5.9"
     },
     "dependencies": {
+        "@supabase/server": "^1.5.3",
         "@supabase/supabase-js": "^2.116.0",
         "bcrypt": "^6.0.0",
         "crypto": "^1.0.1",
