@@ -5,34 +5,34 @@ export class TrainingModel {
     name: string;
     slug: TrainingTypeSlug;
     description: string;
-    duration_minutes: number;
-    max_capacity: number;
+    durationMinutes: number;
+    maxCapacity: number;
     color: string;
     icon: string;
-    is_active: boolean;
+    isActive: boolean;
     createdAt: Date;
 
-    constructor({ id, name, slug, description, duration_minutes, max_capacity, color, icon, is_active, createdAt} : {
+    constructor({ id, name, slug, description, durationMinutes, maxCapacity, color, icon, isActive, createdAt} : {
         id: string;
         name: string;
         slug: TrainingTypeSlug;
         description: string;
-        duration_minutes: number;
-        max_capacity: number;
+        durationMinutes: number;
+        maxCapacity: number;
         color: string;
         icon: string;
-        is_active: boolean;
+        isActive: boolean;
         createdAt: Date;
     }) {
         this.id = id;
         this.name = name;
         this.slug = slug;
         this.description = description;
-        this.duration_minutes = duration_minutes;
-        this.max_capacity = max_capacity;
+        this.durationMinutes = durationMinutes;
+        this.maxCapacity = maxCapacity;
         this.color = color;
         this.icon = icon;
-        this.is_active = is_active;
+        this.isActive = isActive;
         this.createdAt = createdAt;
     }
 }
