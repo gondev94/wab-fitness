@@ -59,7 +59,7 @@ export async function optionalAuth(req: Request, res: Response, next: NextFuncti
 
     const {data, error} = await getSupabaseAdmin().auth.getUser(token);
     if(!error && data.user) {
-        req.user = {id: String(data.user.id), email: String(data.user.email)};
+        req.user = {id: data.user.id, email: data.user.email};
     }
 
     next();

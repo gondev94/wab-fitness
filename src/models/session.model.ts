@@ -27,13 +27,13 @@ export class SessionModel {
         date: Date;
         startTime: string;
         endTime: string;
-        maxCapacity?: number;
-        currentBookings?: number;
+        maxCapacity?: number | undefined;
+        currentBookings?: number | undefined;
         status: SessionStatus;
         visibility: SessionVisibility;
-        blockedReason?: string ;
-        priorityOpensAt?: Date;
-        generalOpensAt?: Date;
+        blockedReason?: string | undefined;
+        priorityOpensAt?: Date | undefined;
+        generalOpensAt?: Date | undefined;
         createdAt: Date;
         updatedAt: Date;
     }) {

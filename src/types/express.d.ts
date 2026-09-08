@@ -1,13 +1,13 @@
 import type { Role } from "../models/user.model.js";
 
 declare global {
-    namespace Express{
+    namespace Express {
         interface Request {
             user?: {
                 id: string;
-                email?: string;
-                role?: Role
-            }
+                email?: string | undefined;
+                role?: Role | undefined;
+            };
         }
     }
 }
