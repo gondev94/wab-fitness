@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'user' | 'guest';
+export type Role = "admin" | "user" | "guest";
 
 export class UserModel {
     readonly id: string | number;
@@ -8,7 +8,14 @@ export class UserModel {
     createdAt: Date;
     updatedAt: Date;
 
-    constructor({ id, email, role, username, createdAt, updatedAt} : {
+    constructor({
+        id,
+        email,
+        role,
+        username,
+        createdAt,
+        updatedAt,
+    }: {
         id: string | number;
         email: string;
         role: Role;
@@ -24,5 +31,3 @@ export class UserModel {
         this.updatedAt = updatedAt;
     }
 }
-
-

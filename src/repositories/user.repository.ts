@@ -5,7 +5,7 @@ export type CreateUserInput = {
     email: string;
     password: string;
     username: string;
-    role?: Exclude<Role, 'Admin'>;
+    role?: Exclude<Role, 'admin'>;
 
 };
 
