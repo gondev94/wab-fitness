@@ -7,6 +7,7 @@ const userController = new UserController(new UserRepository());
 const router = Router();
 
 router.post('/', requireAuth, requireAdmin, (req, res) => userController.create(req, res));
+router.get('/training-types', requireAuth, requireAdmin, (req, res) => userController.listTrainingTypes(req, res));
 
 
 export default router;

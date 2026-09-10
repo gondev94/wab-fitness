@@ -6,6 +6,7 @@ export type FindSessionsInput = {
     from: string;
     to: string;
     includeMemberSessions: boolean;
+    trainingTypeId?: string;
 }
 
 export class SessionRepository {

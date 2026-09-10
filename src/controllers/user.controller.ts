@@ -2,6 +2,9 @@ import type { Request, Response } from "express";
 import { buildLogger } from "../plugins/logger.plugin.js";
 import { UserRepository } from "../repositories/user.repository.js";
 import type { Role } from "../models/user.model.js";
+import type { TrainingTypeSlug } from "../models/training.model.js";
+
+
 
 export class UserController {
     private readonly logger = buildLogger("user.controller");
@@ -9,12 +12,22 @@ export class UserController {
     constructor(private readonly userRepository: UserRepository) {}
 
     async create(req: Request, res: Response) {
-        const { email, password, username, role } = req.body as {
+
+        const VALID_TYPES: TrainingTypeSlug[] = ['Fuerza', 'Resistencia', 'Hipertrofia', 'Personalizado']
+        const { email, password, username, role, trainingTypes } = req.body as {
             email?: string;
             password?: string;
             username?: string;
-            role?: Exclude<Role, "Admin">;
+            role?: Exclude<Role, "admin">;
+            trainingTypes?: TrainingTypeSlug[];
         };
+
+
+        if (trainingTypes && (!Array.isArray(trainingTypes) || !trainingTypes.every((t)=> VALID_TYPES.includes(t)))) {
+            return res
+                .status(400)
+                .json({ message: "Tipos de entrenamiento no válidos" });
+        }
 
         if (!email || !password || !username) {
             return res
@@ -25,12 +38,12 @@ export class UserController {
         if (password.length < 8) {
             return res
                 .status(400)
-                .json({
+                .json({ 
                     message: "El password debe tener al menos 8 caracteres",
                 });
         }
 
-        if (role === "admin") {
+        if (role === "admin" as Role) {
             return res
                 .status(400)
                 .json({ message: "No se puede crear un usuario admin" });
@@ -46,6 +59,7 @@ export class UserController {
                 password,
                 username,
                 role: role as Exclude<Role, "admin">,
+                trainingTypes: trainingTypes as TrainingTypeSlug[],
             });
 
             return res
@@ -56,6 +70,23 @@ export class UserController {
             return res
                 .status(500)
                 .json({ message: "Error al crear el usuario" });
+        }
+    }
+
+    async listTrainingTypes(req: Request, res: Response) {
+        const VALID_TYPES: TrainingTypeSlug[] = ['Fuerza', 'Resistencia', 'Hipertrofia', 'Personalizado']
+        const { training } = req.query as { training?: TrainingTypeSlug };
+
+        if (!training || !VALID_TYPES.includes(training as TrainingTypeSlug)) {
+            return res.status(400).json({ message: "Tipo de entrenamiento no válido" });
+        }
+        
+        try {
+            const users = await this.userRepository.listByTrainingType(training as TrainingTypeSlug)
+            return res.status(200).json({ message: "Alumnos obtenidos correctamente", users });
+        } catch (error) {
+            this.logger.error({ message: (error as Error).message });
+            return res.status(500).json({ message: "Error al obtener los alumnos" });
         }
     }
 }

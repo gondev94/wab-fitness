@@ -1,3 +1,5 @@
+import type { TrainingTypeSlug } from "./training.model.js";
+
 export type Role = "admin" | "user" | "guest";
 
 export class UserModel {
@@ -5,6 +7,7 @@ export class UserModel {
     email: string;
     role: Role;
     username: string;
+    trainingTypes: TrainingTypeSlug[];
     createdAt: Date;
     updatedAt: Date;
 
@@ -13,6 +16,7 @@ export class UserModel {
         email,
         role,
         username,
+        trainingTypes = [],
         createdAt,
         updatedAt,
     }: {
@@ -20,6 +24,7 @@ export class UserModel {
         email: string;
         role: Role;
         username: string;
+        trainingTypes: TrainingTypeSlug[];
         createdAt: Date;
         updatedAt: Date;
     }) {
@@ -27,6 +32,7 @@ export class UserModel {
         this.email = email;
         this.role = role;
         this.username = username;
+        this.trainingTypes = trainingTypes;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
