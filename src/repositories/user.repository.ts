@@ -3,6 +3,7 @@ import type { TrainingTypeSlug } from "../models/training.model.js";
 import { getSupabaseAdmin } from "../plugins/supabase.plugin.js";
 
 
+
 export type CreateUserInput = {
     email: string;
     password: string;
@@ -178,14 +179,14 @@ export class UserRepository {
             }
         }
 
-        const profilePath: { email?: string; username?: string} = {};
-        if(email !== undefined) profilePath.email = email;
-        if(username !== undefined) profilePath.username = username;
+        const profilePatch: { email?: string; username?: string} = {};
+        if(email !== undefined) profilePatch.email = email;
+        if(username !== undefined) profilePatch.username = username;
 
-        if(Object.keys(profilePath).length) {
+        if(Object.keys(profilePatch).length) {
             const { error: profileError } = await supabase
                 .from('profiles')
-                .update(profilePath)
+                .update(profilePatch)
                 .eq('id', id)
             
             if (profileError) {
@@ -234,6 +235,14 @@ export class UserRepository {
             throw new Error('User not found');
         }
         return updated;
+    }
+
+    async delete(id: string): Promise<void> {
+        const supabase = getSupabaseAdmin();
+        const { error } = await supabase.auth.admin.deleteUser(id);
+        if(error) {
+            throw new Error(error.message);
+        }
     }
 
 

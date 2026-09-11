@@ -90,6 +90,11 @@ export class UserController {
             if(!existing) {
                 return res.status(404).json({ message: "User not found" });
             }
+
+            if(existing.role === "admin"){
+                return res.status(400).json({ message: "No se puede actualizar un usuario admin" });
+            }
+
             const user = await this.userRepository.update(id as string, { 
                 email: email as string, 
                 username: username as string, 
@@ -102,6 +107,32 @@ export class UserController {
             return res.status(500).json({ message: "Error al actualizar el usuario" });
         }
 
+    }
+
+    async delete(req: Request, res: Response) {
+        const { id } = req.params;
+
+        if(!id) {
+            return res.status(400).json({ message: "ID is required" });
+        }
+
+        try {
+            const existing = await this.userRepository.findById(id as string);
+            if(!existing) {
+                return res.status(404).json({ message: "User not found" });
+            }
+
+            if(existing.role === "admin"){
+                return res.status(400).json({ message: "No se puede eliminar un usuario admin" });
+            }
+
+            await this.userRepository.delete(id as string);
+
+            return res.status(200).json({ message: "User deleted correctly" });
+        } catch (error) {
+            this.logger.error({ message: (error as Error).message });
+            return res.status(500).json({ message: "Error al eliminar el usuario" });
+        }
     }
 
     async listAll(req: Request, res: Response) {

@@ -10,6 +10,6 @@ router.post('/', requireAuth, requireAdmin, (req, res) => userController.create(
 router.put('/:id', requireAuth, requireAdmin, (req, res) => userController.update(req, res));
 router.get('/', requireAuth, requireAdmin, (req, res) => userController.listAll(req, res));
 router.get('/training-types', requireAuth, requireAdmin, (req, res) => userController.listTrainingTypes(req, res));
-
+router.delete('/:id', requireAuth, requireAdmin, (req, res) => userController.delete(req, res));
 
 export default router;

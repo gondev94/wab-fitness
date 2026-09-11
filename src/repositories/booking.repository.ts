@@ -16,17 +16,17 @@ export class BookingRepository {
             .select('*, training_type:training_types(*)')
             .eq('id', sessionId)
             .maybeSingle();
-            console.log('SESSION ROWS >>>', session, 'ERROR >>>', sessionError);
         if (sessionError) throw new Error(sessionError.message);
         if (!session) throw new Error('Session not found');
         if (session.status !== 'Open') throw new Error('Session is not Open');
 
+
         const {data : existing } = await supabase
             .from('bookings')
-            .select('id, status')
+            .select('id')
             .eq('session_id', sessionId)
             .eq('user_id', userId)
-            .neq('status', 'Cancelled')
+            .neq('Confirmed', 'WaitList')
             .maybeSingle();
         
         if(existing) throw new Error('User already has a booking for this session');
