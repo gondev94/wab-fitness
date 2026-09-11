@@ -2,13 +2,19 @@ import { UserModel, type Role } from "../models/user.model.js";
 import type { TrainingTypeSlug } from "../models/training.model.js";
 import { getSupabaseAdmin } from "../plugins/supabase.plugin.js";
 
+
 export type CreateUserInput = {
     email: string;
     password: string;
     username: string;
     role?: Exclude<Role, 'admin'>;
     trainingTypes?: TrainingTypeSlug[];
+};
 
+export type UpdateUserInput = {
+    email?: string;
+    username?: string;
+    trainingTypes?: TrainingTypeSlug[];
 };
 
 export class UserRepository {
@@ -156,6 +162,80 @@ export class UserRepository {
             totalPages: Math.ceil(total / limit) || 0,
         }
     }
+
+    async update(id: string, { email, username, trainingTypes }: UpdateUserInput): Promise<UserModel> {
+        const supabase = getSupabaseAdmin();
+
+        let previousEmail: string | undefined;
+
+        if(email) {
+            const current = await this.findById(id);
+            previousEmail = current?.email;
+
+            const { error: authError } = await supabase.auth.admin.updateUserById(id, { email });
+            if(authError) {
+                throw new Error(authError.message);
+            }
+        }
+
+        const profilePath: { email?: string; username?: string} = {};
+        if(email !== undefined) profilePath.email = email;
+        if(username !== undefined) profilePath.username = username;
+
+        if(Object.keys(profilePath).length) {
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .update(profilePath)
+                .eq('id', id)
+            
+            if (profileError) {
+                if (email && previousEmail) {
+                    await supabase.auth.admin.updateUserById(id, { email: previousEmail });
+                }
+                throw new Error(profileError.message);
+            }
+        }
+
+        if(trainingTypes !== undefined) {
+            const {error: deleteError} = await supabase
+                .from('profile_training_types')
+                .delete()
+                .eq('profile_id', id);
+            
+            if(deleteError) {
+                throw new Error(deleteError.message);
+            }
+
+            if(trainingTypes.length) {
+                const { data: types, error: typesError } = await supabase
+                    .from('training_types')
+                    .select('id, slug')
+                    .in('slug', trainingTypes);
+            
+                if( typesError || !types || types.length !== trainingTypes.length) {
+                    throw new Error('one or more training types do not exist');
+                }
+
+                const { error: linkError } = await supabase
+                    .from('profile_training_types')
+                    .insert(types.map((t) => ({
+                        profile_id: id,
+                        training_type_id: t.id,
+                    })));
+                
+                if(linkError) {
+                    throw new Error(linkError.message);
+                }
+            }
+        }
+
+        const updated = await this.findById(id);
+        if(!updated) {
+            throw new Error('User not found');
+        }
+        return updated;
+    }
+
 
     async listByTrainingType(trainingType: TrainingTypeSlug): Promise<UserModel[]> {
         const supabase = getSupabaseAdmin();

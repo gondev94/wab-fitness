@@ -1,4 +1,12 @@
-export type TrainingTypeSlug = 'Fuerza' | 'Resistencia' | 'Hipertrofia' | 'Personalizado';
+export const TRAINING_TYPE_SLUGS = [
+    
+    'Fuerza',
+    'Resistencia',
+    'Hipertrofia',
+    'Personalizado',
+] as const;
+
+export type TrainingTypeSlug = (typeof TRAINING_TYPE_SLUGS)[number];
 
 export class TrainingModel {
     readonly id: string;
