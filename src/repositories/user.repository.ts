@@ -19,6 +19,7 @@ export class UserRepository {
             email,
             password,
             email_confirm: true,
+
         })
         
         if(error || !data.user) {
@@ -115,13 +116,53 @@ export class UserRepository {
         });
     }
 
+    async listAll(page: number = 1, limit: number = 20): Promise<{
+        users: UserModel[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }> {
+        const supabase = getSupabaseAdmin();
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        const {data, error, count} = await supabase
+            .from('profiles')
+            .select('*, profile_training_types(training_types(slug))', { count: 'exact' })
+            .order('created_at', { ascending: false })
+            .range(from, to);
+
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        const users = (data ?? []).map((p) => new UserModel({
+            id: p.id,
+            email: p.email,
+            username: p.username,
+            role: p.role,
+            trainingTypes: (p.profile_training_types ?? []).map((r: { training_types: { slug: TrainingTypeSlug } }) => r.training_types.slug),
+            createdAt: new Date(p.created_at),
+            updatedAt: new Date(p.updated_at),
+        }));
+
+        const total = count ?? 0;
+        return {
+            users,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit) || 0,
+        }
+    }
+
     async listByTrainingType(trainingType: TrainingTypeSlug): Promise<UserModel[]> {
         const supabase = getSupabaseAdmin();
         const { data, error } = await supabase
             .from('profiles')
-            .select('*, profile_training_types(training_types(slug))')
-            .eq('training_types.slug', trainingType)
-            .eq('profile_training_types.training_type_id', trainingType);
+            .select('*, profile_training_types!inner(training_types!inner(slug))')
+            .eq('profile_training_types.training_types.slug', trainingType);
             
             if(error || !data) {
                 return [];

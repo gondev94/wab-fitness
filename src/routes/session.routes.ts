@@ -7,4 +7,5 @@ const sessionController = new SessionController(new SessionRepository());
 const router = Router();
 
 router.get("/", optionalAuth, (req, res) => sessionController.list(req, res));
+
 export default router;

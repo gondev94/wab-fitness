@@ -21,38 +21,38 @@ export class UserController {
             role?: Exclude<Role, "admin">;
             trainingTypes?: TrainingTypeSlug[];
         };
+        
 
-
+        
+        if (!email || !password || !username) {
+            return res
+            .status(400)
+            .json({ message: "Email, Password and Username are required" });
+        }
+        
+        if (password.length < 8) {
+            return res
+            .status(400)
+            .json({ 
+                message: "El password debe tener al menos 8 caracteres",
+            });
+        }
+        
+        if (role === "admin" as Role) {
+            return res
+            .status(400)
+            .json({ message: "No se puede crear un usuario admin" });
+        }
+        
+        if (role && role !== "user" && role !== "guest") {
+            return res.status(400).json({ message: "Rol no válido" });
+        }
+        
         if (trainingTypes && (!Array.isArray(trainingTypes) || !trainingTypes.every((t)=> VALID_TYPES.includes(t)))) {
             return res
                 .status(400)
                 .json({ message: "Tipos de entrenamiento no válidos" });
         }
-
-        if (!email || !password || !username) {
-            return res
-                .status(400)
-                .json({ message: "Email, Password and Username are required" });
-        }
-
-        if (password.length < 8) {
-            return res
-                .status(400)
-                .json({ 
-                    message: "El password debe tener al menos 8 caracteres",
-                });
-        }
-
-        if (role === "admin" as Role) {
-            return res
-                .status(400)
-                .json({ message: "No se puede crear un usuario admin" });
-        }
-
-        if (role && role !== "user" && role !== "guest") {
-            return res.status(400).json({ message: "Rol no válido" });
-        }
-
         try {
             const user = await this.userRepository.create({
                 email,
@@ -73,6 +73,25 @@ export class UserController {
         }
     }
 
+    async listAll(req: Request, res: Response) {
+        const page = Math.max(1, Number(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+
+        try {
+            const { users, total, totalPages } = await this.userRepository.listAll(page, limit);
+            res.status(200).json({
+                users,
+                total,
+                totalPages,
+                page,
+                limit,
+            });
+        } catch (error) {
+            this.logger.error({ message: (error as Error).message });
+            return res.status(500).json({ message: "Error al obtener los usuarios" });
+        }
+    }
+
     async listTrainingTypes(req: Request, res: Response) {
         const VALID_TYPES: TrainingTypeSlug[] = ['Fuerza', 'Resistencia', 'Hipertrofia', 'Personalizado']
         const { training } = req.query as { training?: TrainingTypeSlug };
@@ -82,8 +101,13 @@ export class UserController {
         }
         
         try {
-            const users = await this.userRepository.listByTrainingType(training as TrainingTypeSlug)
-            return res.status(200).json({ message: "Alumnos obtenidos correctamente", users });
+            const users = await this.userRepository.listByTrainingType(training as TrainingTypeSlug);
+
+            return res.status(200).json({
+                training,
+                total: users.length,
+                users,
+             });
         } catch (error) {
             this.logger.error({ message: (error as Error).message });
             return res.status(500).json({ message: "Error al obtener los alumnos" });
