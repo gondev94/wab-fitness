@@ -1,4 +1,3 @@
-import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { BookingController } from '../controllers/booking.controller.js';
 import { BookingRepository } from '../repositories/booking.repository.js';
@@ -8,5 +7,6 @@ const bookingController = new BookingController(new BookingRepository());
 const router = Router();
 
 router.post('/', requireAuth, requireAdmin, (req, res) => bookingController.create(req, res));
+router.put('/:id', requireAuth, requireAdmin, (req, res) => bookingController.cancel(req, res));
 
 export default router;

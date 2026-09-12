@@ -1,6 +1,10 @@
 import type { Request, Response } from 'express';
 import { BookingRepository } from '../repositories/booking.repository.js';
 import { buildLogger } from '../plugins/logger.plugin.js';
+import type { BookingCancelReason } from '../models/booking.model.js';
+
+
+const CANCEL_REASONS: BookingCancelReason[] = ["Cancelled", "RescheduleRequested"];
 
 export class BookingController {
     private readonly logger = buildLogger('booking.controller');
@@ -21,6 +25,31 @@ export class BookingController {
             this.logger.error({ message: (error as Error).message})            
             return res.status(400).json({ message: (error as Error).message });
         }
+    }
+
+    async cancel(req: Request, res: Response) {
+        const { id } = req.params;
+        const { cancelReason } = req.body as { cancelReason?: BookingCancelReason };
+
+        if(!id) {
+            return res.status(400).json({ message: 'ID is required'});
+        }
+
+        if(cancelReason && !CANCEL_REASONS.includes(cancelReason)) {
+            return res.status(400).json({ message: "cancelReason must be Cancelled or RescheduleRequested"})
+        }
+
+        try {
+            const booking = await this.bookingRepository.cancel({
+                bookingId: id as string,
+                cancelReason: cancelReason ?? "Cancelled" 
+            });
+            return res.status(200).json({ message: 'Booking cancelled successfully', booking});
+        } catch (error) {
+            this.logger.error({ message: (error as Error).message})            
+            return res.status(400).json({ message: (error as Error).message });
+        }
+
     }
 }
 
