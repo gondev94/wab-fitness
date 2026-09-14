@@ -14,6 +14,7 @@ const NOT_FOUND_ERRORS = new Set(['SESSION_NOT_FOUND', 'TRAINING_TYPE_NOT_FOUND'
 const BAD_REQUEST_ERRORS = new Set([
     'TRAINING_TYPE_INACTIVE',
     'SESSION_ALREADY_CANCELLED',
+    'SESSION_ALREADY_EXISTS',
 ]);
 
 function isValidDate(value: string): boolean {

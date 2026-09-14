@@ -8,7 +8,7 @@ const router = Router();
 
 router.get("/", requireAuth, requireAdmin, (req, res) => sessionController.list(req, res));
 router.get("/:id", requireAuth, requireAdmin, (req, res) => sessionController.getById(req, res));
-router.post("/", requireAuth, requireAdmin, (req, res) => sessionController.create(req, res));
+router.post("/", requireAuth, (req, res) => sessionController.create(req, res));
 router.put("/:id", requireAuth, requireAdmin, (req, res) => sessionController.update(req, res));
 router.delete("/:id", requireAuth, requireAdmin, (req, res) => sessionController.cancel(req, res));
 

@@ -1,6 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 let client: SupabaseClient | null = null;
+let anonClient: SupabaseClient | null = null;
+
 // Lazy: se lee process.env al primer uso, después de dotenv.config()
 export function getSupabaseAdmin(): SupabaseClient {
     if (client) return client;
@@ -15,4 +17,17 @@ export function getSupabaseAdmin(): SupabaseClient {
         auth: { autoRefreshToken: false, persistSession: false },
     });
     return client;
+}
+
+export function getSupabaseAnon(): SupabaseClient {
+    if (anonClient) return anonClient;
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_ANON_KEY;
+    if (!url || !key) {
+        throw new Error("Faltan SUPABASE_URL o SUPABASE_ANON_KEY en .env");
+    }
+    anonClient = createClient(url, key, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
+    return anonClient;
 }

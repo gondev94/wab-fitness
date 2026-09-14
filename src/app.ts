@@ -4,6 +4,8 @@ import { buildLogger } from "./plugins/logger.plugin.js";
 import sessionRoutes from "./routes/session.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
+import authRoutes from "./routes/auth.routes.js";
+
 
 const app = express();
 const PORT: number = process.env.PORT ? parseInt(process.env.PORT) : 3000;
@@ -14,6 +16,7 @@ app.use(express.json());
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/sessions", sessionRoutes);
 app.use("/api/v1/bookings", bookingRoutes);
+app.use("/api/v1/auth", authRoutes);
 
 app.listen(PORT, () => {
     if (PORT) {

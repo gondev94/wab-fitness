@@ -14,6 +14,13 @@ export type CancelBookingInput = {
     cancelReason?: BookingCancelReason;
 };
 
+export type ListBookingsInput = {
+    sessionId?: string | undefined;
+    userId?: string | undefined;
+    page: number;
+    limit: number;
+};
+
 export class BookingRepository {
     async create({
         userId,
@@ -30,6 +37,16 @@ export class BookingRepository {
         if (sessionError) throw new Error(sessionError.message);
         if (!session) throw new Error("SESSION_NOT_FOUND");
         if (session.status !== "Open") throw new Error("SESSION_NOT_OPEN");
+
+        // Solo se puede reservar a un usuario con rol "user"
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("id, role")
+            .eq("id", userId)
+            .maybeSingle();
+
+        if (!profile) throw new Error("USER_NOT_FOUND");
+        if (profile.role !== "user") throw new Error("USER_NOT_BOOKABLE");
 
         const { data: existing } = await supabase
             .from("bookings")
@@ -70,6 +87,57 @@ export class BookingRepository {
         if (!booking) throw new Error("Failed to create booking");
 
         return this.toModel(booking);
+    }
+
+    async findById(id: string): Promise<BookingModel | null> {
+        const supabase = getSupabaseAdmin();
+
+        const { data, error } = await supabase
+            .from("bookings")
+            .select("*")
+            .eq("id", id)
+            .maybeSingle();
+
+        if (error) throw new Error(error.message);
+        if (!data) return null;
+
+        return this.toModel(data);
+    }
+
+    async list({ sessionId, userId, page, limit }: ListBookingsInput): Promise<{
+        bookings: BookingModel[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }> {
+        const supabase = getSupabaseAdmin();
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        let query = supabase
+            .from("bookings")
+            .select("*", { count: "exact" })
+            .order("booked_at", { ascending: false })
+            .range(from, to);
+
+        if (sessionId) query = query.eq("session_id", sessionId);
+        if (userId) query = query.eq("user_id", userId);
+
+        const { data, error, count } = await query;
+
+        if (error) throw new Error(error.message);
+
+        const bookings = (data ?? []).map((b) => this.toModel(b));
+        const total = count ?? 0;
+
+        return {
+            bookings,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit) || 0,
+        };
     }
 
     async cancel({

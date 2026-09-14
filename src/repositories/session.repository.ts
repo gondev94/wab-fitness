@@ -1,5 +1,12 @@
-import { SessionModel, type SessionStatus, type SessionVisibility } from "../models/session.model.js";
-import { TrainingModel, type TrainingTypeSlug } from "../models/training.model.js";
+import {
+    SessionModel,
+    type SessionStatus,
+    type SessionVisibility,
+} from "../models/session.model.js";
+import {
+    TrainingModel,
+    type TrainingTypeSlug,
+} from "../models/training.model.js";
 import { getSupabaseAdmin } from "../plugins/supabase.plugin.js";
 
 export type FindSessionsInput = {
@@ -66,7 +73,11 @@ type SessionRow = {
 const SESSION_SELECT = "*, training_type:training_types(*)";
 
 export class SessionRepository {
-    async findByDateRange({ from, to, includeMemberSessions }: FindSessionsInput): Promise<SessionModel[]> {
+    async findByDateRange({
+        from,
+        to,
+        includeMemberSessions,
+    }: FindSessionsInput): Promise<SessionModel[]> {
         const supabase = getSupabaseAdmin();
 
         let query = supabase
@@ -93,7 +104,9 @@ export class SessionRepository {
         const sessionIds = sessions.map((s) => s.id);
         const counts = await this.countConfirmed(sessionIds);
 
-        return (sessions as SessionRow[]).map((s) => this.toModel(s, counts.get(s.id) ?? 0));
+        return (sessions as SessionRow[]).map((s) =>
+            this.toModel(s, counts.get(s.id) ?? 0),
+        );
     }
 
     async findById(id: string): Promise<SessionModel | null> {
@@ -142,9 +155,13 @@ export class SessionRepository {
             .select(SESSION_SELECT)
             .single();
 
-        if (error || !data) {
-            throw new Error(error?.message ?? "Failed to create session");
+        if (error) {
+            if ((error as { code?: string }).code === "23505") {
+                throw new Error("SESSION_ALREADY_EXISTS");
+            }
+            throw new Error(error.message);
         }
+        if (!data) throw new Error("Failed to create session");
 
         return this.toModel(data as SessionRow, 0);
     }
@@ -159,12 +176,16 @@ export class SessionRepository {
         if (input.date !== undefined) patch.date = input.date;
         if (input.startTime !== undefined) patch.start_time = input.startTime;
         if (input.endTime !== undefined) patch.end_time = input.endTime;
-        if (input.maxCapacity !== undefined) patch.max_capacity = input.maxCapacity;
+        if (input.maxCapacity !== undefined)
+            patch.max_capacity = input.maxCapacity;
         if (input.status !== undefined) patch.status = input.status;
         if (input.visibility !== undefined) patch.visibility = input.visibility;
-        if (input.blockedReason !== undefined) patch.blocked_reason = input.blockedReason;
-        if (input.priorityOpensAt !== undefined) patch.priority_opens_at = input.priorityOpensAt;
-        if (input.generalOpensAt !== undefined) patch.general_opens_at = input.generalOpensAt;
+        if (input.blockedReason !== undefined)
+            patch.blocked_reason = input.blockedReason;
+        if (input.priorityOpensAt !== undefined)
+            patch.priority_opens_at = input.priorityOpensAt;
+        if (input.generalOpensAt !== undefined)
+            patch.general_opens_at = input.generalOpensAt;
 
         const { data, error } = await supabase
             .from("sessions")
@@ -184,12 +205,15 @@ export class SessionRepository {
     async cancel(id: string): Promise<SessionModel> {
         const existing = await this.findById(id);
         if (!existing) throw new Error("SESSION_NOT_FOUND");
-        if (existing.status === "Cancelled") throw new Error("SESSION_ALREADY_CANCELLED");
+        if (existing.status === "Cancelled")
+            throw new Error("SESSION_ALREADY_CANCELLED");
 
         return this.update(id, { status: "Cancelled" });
     }
 
-    private async countConfirmed(sessionIds: string[]): Promise<Map<string, number>> {
+    private async countConfirmed(
+        sessionIds: string[],
+    ): Promise<Map<string, number>> {
         const counts = new Map<string, number>();
         if (sessionIds.length === 0) return counts;
 
@@ -214,17 +238,17 @@ export class SessionRepository {
             trainingTypeId: s.training_type?.id ?? "",
             trainingType: s.training_type
                 ? new TrainingModel({
-                    id: s.training_type.id,
-                    name: s.training_type.name,
-                    slug: s.training_type.slug,
-                    description: s.training_type.description,
-                    durationMinutes: s.training_type.duration_minutes,
-                    maxCapacity: s.training_type.max_capacity,
-                    color: s.training_type.color,
-                    icon: s.training_type.icon,
-                    isActive: s.training_type.is_active,
-                    createdAt: new Date(s.training_type.created_at),
-                })
+                      id: s.training_type.id,
+                      name: s.training_type.name,
+                      slug: s.training_type.slug,
+                      description: s.training_type.description,
+                      durationMinutes: s.training_type.duration_minutes,
+                      maxCapacity: s.training_type.max_capacity,
+                      color: s.training_type.color,
+                      icon: s.training_type.icon,
+                      isActive: s.training_type.is_active,
+                      createdAt: new Date(s.training_type.created_at),
+                  })
                 : undefined,
             date: new Date(s.date),
             startTime: s.start_time,
@@ -234,8 +258,12 @@ export class SessionRepository {
             status: s.status,
             visibility: s.visibility,
             blockedReason: s.blocked_reason ?? undefined,
-            priorityOpensAt: s.priority_opens_at ? new Date(s.priority_opens_at) : undefined,
-            generalOpensAt: s.general_opens_at ? new Date(s.general_opens_at) : undefined,
+            priorityOpensAt: s.priority_opens_at
+                ? new Date(s.priority_opens_at)
+                : undefined,
+            generalOpensAt: s.general_opens_at
+                ? new Date(s.general_opens_at)
+                : undefined,
             createdAt: new Date(s.created_at),
             updatedAt: new Date(s.updated_at),
         });
