@@ -1,8 +1,13 @@
 import type { SessionModel } from "./session.model.js";
 import type { UserModel } from "./user.model.js";
 
-export type BookingStatus = 'Confirmed' | 'WaitList' | 'Cancelled' | 'NoShow';
-export type BookingCancelReason = 'Cancelled' | 'RescheduleRequested';  
+export const BOOKING_STATUSES = ['Confirmed', 'WaitList', 'Cancelled', 'NoShow'] as const;
+
+export type BookingStatus = (typeof BOOKING_STATUSES)[number];
+
+export const BOOKING_CANCEL_REASONS = ['Cancelled', 'RescheduleRequested'] as const;
+
+export type BookingCancelReason = (typeof BOOKING_CANCEL_REASONS)[number];
 
 
 export class BookingModel {

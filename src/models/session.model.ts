@@ -1,7 +1,12 @@
 import type { TrainingModel } from "./training.model.js";
 
-export type SessionStatus = 'Open' | 'Closed' | 'Blocked' | 'Cancelled';
-export type SessionVisibility = 'Public' | 'Member';
+export const SESSION_STATUSES = ['Open', 'Closed', 'Blocked', 'Cancelled'] as const;
+
+export type SessionStatus = (typeof SESSION_STATUSES)[number];
+
+export const SESSION_VISIBILITIES = ['Public', 'Member'] as const;
+
+export type SessionVisibility = (typeof SESSION_VISIBILITIES)[number];
 
 export class SessionModel {
     readonly id: string;
