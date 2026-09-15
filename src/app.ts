@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import express from "express";
+import helmet from "helmet";
+import cors from "cors";
 import { buildLogger } from "./plugins/logger.plugin.js";
 import sessionRoutes from "./routes/session.routes.js";
 import userRoutes from "./routes/user.routes.js";
@@ -11,8 +13,12 @@ const app = express();
 const PORT: number = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const logger = buildLogger("app.ts");
 
-
-app.use(express.json());
+app.use(helmet());
+app.use(cors({
+    origin: process.env.FRONTEND_ORIGIN || false,
+    credentials: true,
+}));
+app.use(express.json({ limit: "32kb" }));
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/sessions", sessionRoutes);
 app.use("/api/v1/bookings", bookingRoutes);

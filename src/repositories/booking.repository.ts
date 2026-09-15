@@ -21,6 +21,20 @@ export type ListBookingsInput = {
     limit: number;
 };
 
+const BOOKING_RPC_CODES = new Set([
+    "SESSION_NOT_FOUND",
+    "SESSION_NOT_OPEN",
+    "DUPLICATE_BOOKING",
+]);
+
+function mapBookingRpcError(message: string, code?: string): string {
+    if (code === "23505") return "DUPLICATE_BOOKING";
+    for (const known of BOOKING_RPC_CODES) {
+        if (message.includes(known)) return known;
+    }
+    return message;
+}
+
 export class BookingRepository {
     async create({
         userId,
@@ -38,55 +52,50 @@ export class BookingRepository {
         if (!session) throw new Error("SESSION_NOT_FOUND");
         if (session.status !== "Open") throw new Error("SESSION_NOT_OPEN");
 
-        // Solo se puede reservar a un usuario con rol "user"
+        const now = new Date();
+        const priorityOpensAt = session.priority_opens_at
+            ? new Date(session.priority_opens_at)
+            : null;
+        const generalOpensAt = session.general_opens_at
+            ? new Date(session.general_opens_at)
+            : null;
+        const opensAt = priorityOpensAt ?? generalOpensAt;
+        if (opensAt && now < opensAt) {
+            throw new Error("SESSION_NOT_OPEN_YET");
+        }
+
         const { data: profile } = await supabase
             .from("profiles")
-            .select("id, role")
+            .select("id, role, profile_training_types(training_type_id)")
             .eq("id", userId)
             .maybeSingle();
 
         if (!profile) throw new Error("USER_NOT_FOUND");
         if (profile.role !== "user") throw new Error("USER_NOT_BOOKABLE");
 
-        const { data: existing } = await supabase
-            .from("bookings")
-            .select("id")
-            .eq("session_id", sessionId)
-            .eq("user_id", userId)
-            .in("status", ["Confirmed", "WaitList"])
-            .maybeSingle();
+        const sessionTypeId =
+            session.training_type_id ?? session.training_type?.id;
+        const hasTrainingType = (
+            profile.profile_training_types as
+                | { training_type_id: string }[]
+                | null
+        )?.some((r) => r.training_type_id === sessionTypeId);
+        if (!hasTrainingType) {
+            throw new Error("SESSION_NOT_BOOKABLE");
+        }
 
-        if (existing) throw new Error("DUPLICATE_BOOKING");
-
-        const { count } = await supabase
-            .from("bookings")
-            .select("id", { count: "exact", head: true })
-            .eq("session_id", sessionId)
-            .eq("status", "Confirmed");
-
-        const maxCapacity =
-            session.max_capacity ?? session.training_type?.max_capacity;
-        const isFull = maxCapacity != null && (count ?? 0) >= maxCapacity;
-
-        const { data: booking, error } = await supabase
-            .from("bookings")
-            .insert({
-                user_id: userId,
-                session_id: sessionId,
-                status: isFull ? "WaitList" : "Confirmed",
-            })
-            .select()
-            .single();
+        const { data: booking, error } = await supabase.rpc("create_booking", {
+            p_user_id: userId,
+            p_session_id: sessionId,
+        });
 
         if (error) {
-            if ((error as { code?: string }).code === "23505") {
-                throw new Error("DUPLICATE_BOOKING");
-            }
-            throw new Error(error.message);
+            throw new Error(mapBookingRpcError(error.message, error.code));
         }
-        if (!booking) throw new Error("Failed to create booking");
+        const row = Array.isArray(booking) ? booking[0] : booking;
+        if (!row) throw new Error("Failed to create booking");
 
-        return this.toModel(booking);
+        return this.toModel(row);
     }
 
     async findById(id: string): Promise<BookingModel | null> {

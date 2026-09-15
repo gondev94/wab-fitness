@@ -12,7 +12,10 @@ export class AuthController {
     private readonly logger = buildLogger("auth.controller");
 
     async login(req: Request, res: Response) {
-        const { email, password } = req.body as LoginBody;
+        const rawEmail = (req.body as LoginBody).email;
+        const password = (req.body as LoginBody).password;
+        const email =
+            typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
 
         if (!email || !password) {
             return res
@@ -37,16 +40,20 @@ export class AuthController {
             // 2) Traer el rol de profiles (una vez, en login)
             const { data: profile } = await getSupabaseAdmin()
                 .from("profiles")
-                .select("role")
+                .select("id, email, role")
                 .eq("id", data.user.id)
-                .single();
+                .maybeSingle();
 
-            const role = (profile?.role ?? "guest") as Role;
+            if (!profile) {
+                return res.status(401).json({ message: "Credenciales inválidas" });
+            }
+
+            const role = profile.role as Role;
 
             // 3) Firmar TU token
             const token = signAccessToken({
-                sub: data.user.id,
-                email: data.user.email ?? "",
+                sub: profile.id,
+                email: profile.email ?? data.user.email ?? "",
                 role,
             });
 

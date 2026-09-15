@@ -1,8 +1,6 @@
 import { UserModel, type Role } from "../models/user.model.js";
 import type { TrainingTypeSlug } from "../models/training.model.js";
 import { getSupabaseAdmin } from "../plugins/supabase.plugin.js";
-import { randomUUID } from "crypto";
-import { hashPassword } from "../plugins/password.plugin.js";
 
 export type CreateUserInput = {
     email: string;
@@ -27,14 +25,23 @@ export class UserRepository {
         trainingTypes = [],
     }: CreateUserInput): Promise<UserModel> {
         const supabase = getSupabaseAdmin();
-        const id = randomUUID();
-        const passwordHash = await hashPassword(password);
+        const { data: created, error: authError } =
+            await supabase.auth.admin.createUser({
+                email,
+                password,
+                email_confirm: true,
+            });
+        if (authError || !created.user) {
+            throw new Error(authError?.message ?? "Failed to create auth user");
+        }
+        const id = created.user.id;
         const { data: profile, error: profileError } = await supabase
             .from("profiles")
-            .insert({ id, email, username, role, password_hash: passwordHash })
-            .select("id, email, username, role, created_at, updated_at") // sin password_hash
+            .insert({ id, email, username, role }) // sin password_hash
+            .select("id, email, username, role, created_at, updated_at")
             .single();
         if (profileError || !profile) {
+            await supabase.auth.admin.deleteUser(id);
             if ((profileError as { code?: string })?.code === "23505") {
                 throw new Error("EMAIL_ALREADY_EXISTS");
             }
@@ -48,7 +55,8 @@ export class UserRepository {
                 .select("id, slug")
                 .in("slug", trainingTypes);
             if (typesError || !types || types.length !== trainingTypes.length) {
-                await supabase.from("profiles").delete().eq("id", id); // rollback
+                await supabase.from("profiles").delete().eq("id", id);
+                await supabase.auth.admin.deleteUser(id);
                 throw new Error("one or more training types do not exist");
             }
             const rows = types.map((t) => ({
@@ -59,7 +67,8 @@ export class UserRepository {
                 .from("profile_training_types")
                 .insert(rows);
             if (linkError) {
-                await supabase.from("profiles").delete().eq("id", id); // rollback
+                await supabase.from("profiles").delete().eq("id", id);
+                await supabase.auth.admin.deleteUser(id);
                 throw new Error(linkError.message);
             }
         }
@@ -72,23 +81,6 @@ export class UserRepository {
             createdAt: new Date(profile.created_at),
             updatedAt: new Date(profile.updated_at),
         });
-    }
-
-    async findCredentialsByEmail(
-        email: string,
-    ): Promise<{ id: string; role: Role; passwordHash: string } | null> {
-        const supabase = getSupabaseAdmin();
-        const { data } = await supabase
-            .from("profiles")
-            .select("id, role, password_hash")
-            .eq("email", email)
-            .maybeSingle();
-        if (!data || !data.password_hash) return null;
-        return {
-            id: data.id,
-            role: data.role,
-            passwordHash: data.password_hash,
-        };
     }
 
     async findByEmail(email: string): Promise<UserModel | null> {
@@ -281,6 +273,8 @@ export class UserRepository {
 
     async delete(id: string): Promise<void> {
         const supabase = getSupabaseAdmin();
+        const { error: authError } = await supabase.auth.admin.deleteUser(id);
+        if (authError) throw new Error(authError.message);
         const { error } = await supabase.from("profiles").delete().eq("id", id);
         if (error) throw new Error(error.message);
     }

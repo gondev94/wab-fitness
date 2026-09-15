@@ -1,7 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../plugins/jwt.plugin.js";
+import { getSupabaseAdmin } from "../plugins/supabase.plugin.js";
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
     const header = req.headers.authorization;
     const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined;
 
@@ -11,10 +12,18 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 
     try {
         const payload = verifyAccessToken(token);
+        const { data: profile } = await getSupabaseAdmin()
+            .from("profiles")
+            .select("id, email, role")
+            .eq("id", payload.sub)
+            .maybeSingle();
+        if (!profile) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
         req.user = {
-            id: payload.sub,
-            email: payload.email,
-            role: payload.role,
+            id: profile.id,
+            email: profile.email,
+            role: profile.role,
         };
         return next();
     } catch {
@@ -22,7 +31,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     }
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
     if (!req.user?.id) {
         return res.status(401).json({ message: "Unauthorized" });
     }
@@ -32,14 +41,25 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
     return next();
 }
 
-export function optionalAuth(req: Request, res: Response, next: NextFunction) {
+export async function optionalAuth(req: Request, res: Response, next: NextFunction) {
     const header = req.headers.authorization;
     const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined;
 
     if (token) {
         try {
             const payload = verifyAccessToken(token);
-            req.user = { id: payload.sub, email: payload.email, role: payload.role };
+            const { data: profile } = await getSupabaseAdmin()
+                .from("profiles")
+                .select("id, email, role")
+                .eq("id", payload.sub)
+                .maybeSingle();
+            if (profile) {
+                req.user = {
+                    id: profile.id,
+                    email: profile.email,
+                    role: profile.role,
+                };
+            }
         } catch {
             // token inválido → seguimos como invitado
         }
